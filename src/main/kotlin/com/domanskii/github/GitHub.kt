@@ -18,20 +18,34 @@ class GitHub(
     private val gh: GitHub = GitHubBuilder().withOAuthToken(token).build()
 
     fun isMergeToMasterCommit(commitSha: String): Boolean {
-        log.debug { "isMergeToMasterCommit..." }
+        log.debug { "isMergeToMasterCommit() for ${commitSha.substring(0, 7)} commit..." }
         val defaultBranchSha = gh.getRepository(repo).getBranch(defaultBranch).shA1
         return gh.getRepository(repo)
             .getCommit(commitSha).parentSHA1s.let { it.size > 1 && it.contains(defaultBranchSha) }
     }
 
-    suspend fun postMetricsForCommit(commitSha: String) {
-        log.debug { "postMetricsForCommit..." }
+    suspend fun addMetricsToPrMessage(commitSha: String) {
+        log.debug { "addMetricsToPrMessage() for ${commitSha.substring(0, 7)} commit..." }
+
+        val prList = gh.getRepository(repo).getCommit(commitSha).listPullRequests().toList()
+        if (prList.size == 0) {
+            log.debug { "There are no PRs for ${commitSha.substring(0, 7)} commit..." }
+            return
+        }
+        log.debug { "${prList.size} PRs found for ${commitSha.substring(0, 7)} commit" }
+
         // get all metrics for commit
         val metrics = db.getMetricsForCommit(commitSha)
+        log.debug { "${metrics.size} metrics found for ${commitSha.substring(0, 7)} commit" }
 
         // get reference version for each metric
         val metricsWithReferences = metrics.map {
             Pair(it, db.getReferenceForMetric(it.name))
+        }
+        log.debug {
+            "${metricsWithReferences.filter { it.second != null }.size} metric references found for ${
+                commitSha.substring(0, 7)
+            } commit"
         }
 
         // calculate diff
@@ -71,7 +85,9 @@ class GitHub(
 
         val table = tableHeader.plus(tableRows)
 
-        gh.getRepository(repo).getCommit(commitSha).listPullRequests().forEach { pr ->
+        prList.forEach { pr ->
+            log.debug { "Updating ${pr.id} PR body for ${commitSha.substring(0, 7)} commit" }
+
             val result = pr.body.replace(Regex(PLACEHOLDER_REGEX)) { matchResult ->
                 matchResult.groupValues[1] + table
             }

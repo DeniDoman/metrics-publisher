@@ -27,7 +27,7 @@ fun Application.configureRouting(dao: DAOFacadeImpl, gitHub: GitHub) {
                 // Merge-to-master-commit doesn't have PR to post metrics
                 if (!isReference) {
                     launch(Dispatchers.IO) {
-                        gitHub.postMetricsForCommit(req.commitSha)
+                        gitHub.addMetricsToPrMessage(req.commitSha)
                     }
                 }
 
