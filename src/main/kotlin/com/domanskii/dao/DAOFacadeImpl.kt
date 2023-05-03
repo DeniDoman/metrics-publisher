@@ -34,11 +34,22 @@ class DAOFacadeImpl : DAOFacade {
         insertStatement.resultedValues?.singleOrNull()?.let(::resultRowToMetric)
     }
 
-    override suspend fun getMetricsForCommit(commitSha: String): List<Metric> = dbQuery {
+    override suspend fun getMetricsForCommit(commitSha: String): List<Metric> {
         log.debug { "Getting metrics for the commit from DB..." }
-        Metrics
-            .select { Metrics.commitSha eq commitSha }
-            .map(::resultRowToMetric)
+
+        val actualIds = dbQuery {
+            Metrics
+                .slice(Metrics.name, Metrics.id.max().alias("id"))
+                .select { Metrics.commitSha eq commitSha }
+                .groupBy(Metrics.name)
+                .map {it[Metrics.id.max()]}
+        }.filterNotNull()
+
+        return dbQuery {
+            Metrics
+                .select { Metrics.id inList actualIds }
+                .map(::resultRowToMetric)
+        }
     }
 
     override suspend fun getReferenceForMetric(name: String): Metric? = dbQuery {

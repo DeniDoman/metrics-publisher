@@ -35,7 +35,7 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-core:$exposed_version")
     implementation("org.jetbrains.exposed:exposed-dao:$exposed_version")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposed_version")
-    implementation("org.jetbrains.exposed:exposed-jdbc:$postgres_version")
+    implementation("org.postgresql:postgresql:$postgres_version")
 
     implementation("org.kohsuke:github-api:1.314")
 

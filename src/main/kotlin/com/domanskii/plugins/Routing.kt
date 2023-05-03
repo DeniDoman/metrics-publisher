@@ -24,7 +24,7 @@ fun Application.configureRouting(dao: DAOFacadeImpl, gitHub: GitHub) {
                 val isReference = gitHub.isMergeToMasterCommit(req.commitSha)
                 dao.postMetric(req.commitSha, req.name, req.value, req.units, isReference, req.isIncreaseBad)
 
-                // Merge-to-master-commit doesn't have PR to post metrics
+                // Merge-to-master-commit doesn't have open PRs to post metrics
                 if (!isReference) {
                     launch(Dispatchers.IO) {
                         gitHub.addMetricsToPrMessage(req.commitSha)

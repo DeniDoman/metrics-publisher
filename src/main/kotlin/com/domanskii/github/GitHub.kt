@@ -9,19 +9,26 @@ import kotlin.math.absoluteValue
 
 private val log = KotlinLogging.logger {}
 
-data class OutputRow(val name: String, val value: Double, val units: String, val diff: Double, val symbol: String)
+data class OutputRow(
+    val name: String, val value: Double, val units: String, val sign: String, val diff: Double, val symbol: String
+)
 
 class GitHub(
-    token: String, private val db: DAOFacadeImpl, private val repo: String, private val defaultBranch: String
+    token: String, private val db: DAOFacadeImpl, repo: String, private val defaultBranch: String
 ) {
     private val PLACEHOLDER_REGEX = "(<!-- PR-METRICS-PUBLISHER:.*?-->.*)([\\s\\S]*)"
     private val gh: GitHub = GitHubBuilder().withOAuthToken(token).build()
+    private val repo = repo.trim()
 
     fun isMergeToMasterCommit(commitSha: String): Boolean {
         log.debug { "isMergeToMasterCommit() for ${commitSha.substring(0, 7)} commit..." }
-        val defaultBranchSha = gh.getRepository(repo).getBranch(defaultBranch).shA1
-        return gh.getRepository(repo)
-            .getCommit(commitSha).parentSHA1s.let { it.size > 1 && it.contains(defaultBranchSha) }
+
+        // Check if commit belongs to merged PR to default branch
+        val prList = gh.getRepository(repo).getCommit(commitSha).listPullRequests().toList().filter {
+            it.isMerged && it.base.ref == defaultBranch
+        }
+
+        return prList.isNotEmpty()
     }
 
     suspend fun addMetricsToPrMessage(commitSha: String) {
@@ -60,36 +67,47 @@ class GitHub(
             // diff will be zero in case a Reference is absent
             val diff = decimalFormat.format(pair.first.value - (pair.second?.value ?: pair.first.value)).toDouble()
 
+            val sign = when {
+                diff > 0 -> "+"
+                diff < 0 -> "-"
+                else -> ""
+            }
+
             val symbol = when {
                 (diff > 0 && pair.first.isIncreaseBad) -> "\uD83D\uDD3A"
                 (diff < 0 && !pair.first.isIncreaseBad) -> "\uD83D\uDD3B"
                 else -> ""
             }
 
-            OutputRow(name, value, units, diff, symbol)
+            OutputRow(name, value, units, sign, diff, symbol)
+        }.sortedBy { it.name }
+
+        val headerSymbol = when {
+            outputRows.any { it.symbol.isNotEmpty() } -> "⚠️"
+            else -> "✅"
         }
 
-        val warnSymbol = when {
-            outputRows.any { it.symbol.isNotEmpty() } -> "⚠"
-            else -> ""
-        }
-
-        val tableHeader = """ ### $warnSymbol PR Metrics
-            | Metric               | Value   | Diff        |
-            |----------------------|---------|-------------|
-        """
+        val tableHeader = """### $headerSymbol PR Metrics
+| Metric               | Value   | Diff        |
+|----------------------|---------|-------------|
+"""
 
         val tableRows = outputRows.map {
-            "| ${it.name} | ${it.value} ${it.units} | ${if (it.diff > 0) "+" else "-"} ${it.diff.absoluteValue} ${it.units} ${it.symbol} |"
+            "| ${it.name} | ${it.value} ${it.units} | ${it.sign} ${it.diff.absoluteValue} ${it.units} ${it.symbol} |"
         }.joinToString("\n")
 
         val table = tableHeader.plus(tableRows)
 
         prList.forEach { pr ->
-            log.debug { "Updating ${pr.id} PR body for ${commitSha.substring(0, 7)} commit" }
+            log.debug { "Updating #${pr.id} PR body for ${commitSha.substring(0, 7)} commit" }
+            val body = pr.body
+            if (body.isBlank()) {
+                log.info { "PR #${pr.id} doesn't have body!" }
+                return
+            }
 
-            val result = pr.body.replace(Regex(PLACEHOLDER_REGEX)) { matchResult ->
-                matchResult.groupValues[1] + table
+            val result = body.replace(Regex(PLACEHOLDER_REGEX)) { matchResult ->
+                matchResult.groupValues[1] + "\n" + table
             }
             pr.body = result
         }
