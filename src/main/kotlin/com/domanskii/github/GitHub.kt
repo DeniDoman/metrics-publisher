@@ -10,7 +10,7 @@ import kotlin.math.absoluteValue
 private val log = KotlinLogging.logger {}
 
 data class OutputRow(
-    val name: String, val value: Double, val units: String, val sign: String, val diff: Double, val symbol: String
+    val name: String, val value: Double, val units: String, val sign: String, val diff: Double?, val symbol: String
 )
 
 class GitHub(
@@ -64,18 +64,21 @@ class GitHub(
             val units = pair.first.units
 
             val decimalFormat = DecimalFormat("#.##")
-            // diff will be zero in case a Reference is absent
-            val diff = decimalFormat.format(pair.first.value - (pair.second?.value ?: pair.first.value)).toDouble()
+
+            val diff = when {
+                pair.second != null -> decimalFormat.format(pair.first.value - pair.second!!.value).toDouble()
+                else -> null
+            }
 
             val sign = when {
-                diff > 0 -> "+"
-                diff < 0 -> "-"
+                diff != null && diff > 0 -> "+"
+                diff != null && diff < 0 -> "-"
                 else -> ""
             }
 
             val symbol = when {
-                (diff > 0 && pair.first.isIncreaseBad) -> "\uD83D\uDD3A"
-                (diff < 0 && !pair.first.isIncreaseBad) -> "\uD83D\uDD3B"
+                (diff != null && diff > 0 && pair.first.isIncreaseBad) -> "\uD83D\uDD3A"
+                (diff != null && diff < 0 && !pair.first.isIncreaseBad) -> "\uD83D\uDD3B"
                 else -> ""
             }
 
@@ -93,7 +96,12 @@ class GitHub(
 """
 
         val tableRows = outputRows.map {
-            "| ${it.name} | ${it.value} ${it.units} | ${it.sign} ${it.diff.absoluteValue} ${it.units} ${it.symbol} |"
+            val diffString = when {
+                it.diff != null -> "${it.sign} ${it.diff.absoluteValue } ${it.units} ${it.symbol}"
+                else -> "no ref"
+            }
+
+            "| ${it.name} | ${it.value} ${it.units} | $diffString |"
         }.joinToString("\n")
 
         val table = tableHeader.plus(tableRows)
