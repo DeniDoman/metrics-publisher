@@ -16,7 +16,7 @@ data class OutputRow(
 class GitHub(
     token: String, private val db: DAOFacadeImpl, repo: String, private val defaultBranch: String
 ) {
-    private val PLACEHOLDER_REGEX = "(<!-- PR-METRICS-PUBLISHER:.*?-->.*)([\\s\\S]*)"
+    private val PLACEHOLDER_REGEX = "(<!-- PR-METRICS-PUBLISHER:.*?-->.*)([\\s\\S]*)".toRegex()
     private val gh: GitHub = GitHubBuilder().withOAuthToken(token).build()
     private val repo = repo.trim()
 
@@ -109,12 +109,17 @@ class GitHub(
         prList.forEach { pr ->
             log.debug { "Updating #${pr.id} PR body for ${commitSha.substring(0, 7)} commit" }
             val body = pr.body
+
             if (body.isBlank()) {
-                log.info { "PR #${pr.id} doesn't have body!" }
+                log.info { "PR #${pr.id} doesn't have a body!" }
+                return
+            }
+            if (!PLACEHOLDER_REGEX.containsMatchIn(body)) {
+                log.info { "PR #${pr.id} doesn't have the placeholder!" }
                 return
             }
 
-            val result = body.replace(Regex(PLACEHOLDER_REGEX)) { matchResult ->
+            val result = body.replace(PLACEHOLDER_REGEX) { matchResult ->
                 matchResult.groupValues[1] + "\n" + table
             }
             pr.body = result
