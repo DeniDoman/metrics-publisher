@@ -28,7 +28,12 @@ class GitHub(
             it.isMerged && it.base.ref == defaultBranch
         }
 
-        return prList.isNotEmpty()
+        if (prList.isNotEmpty()) {
+            log.debug { "${commitSha.substring(0, 7)} is a merge-to-$defaultBranch commit!" }
+            return true
+        } else {
+            return false
+        }
     }
 
     suspend fun addMetricsToPrMessage(commitSha: String) {
