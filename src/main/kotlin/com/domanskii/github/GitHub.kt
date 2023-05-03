@@ -90,7 +90,7 @@ class GitHub(
             else -> "✅"
         }
 
-        val tableHeader = """### $headerSymbol PR Metrics
+        val tableHeader = """#### $headerSymbol PR Metrics
 | Metric               | Value   | Diff        |
 |----------------------|---------|-------------|
 """
