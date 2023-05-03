@@ -47,7 +47,8 @@ fun assertEnvVariables() {
     assert(System.getenv("GH_REPO").isNotBlank())
     assert(System.getenv("GH_TOKEN").isNotBlank())
     assert(System.getenv("GH_DEFAULT_BRANCH").isNotBlank())
-    assert(System.getenv("DB_ADDRESS").isNotBlank())
-    assert(System.getenv("DB_USER").isNotBlank())
+    assert(System.getenv("DB_HOST").isNotBlank())
+    assert(System.getenv("DB_NAME").isNotBlank())
+    assert(System.getenv("DB_USERNAME").isNotBlank())
     assert(System.getenv("DB_PASSWORD").isNotEmpty())
 }

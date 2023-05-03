@@ -35,8 +35,8 @@ fun Application.configureRouting(dao: DAOFacadeImpl, gitHub: GitHub) {
             }
         }
 
-        get("/api/v1/up") {
-            call.respond(HttpStatusCode.OK)
+        get("/healthz") {
+            call.respondText("OK")
         }
     }
 }

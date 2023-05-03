@@ -13,13 +13,14 @@ object DatabaseFactory {
     fun init() {
         log.debug { "Initializing Database..." }
 
-        val dbAddress = System.getenv("DB_ADDRESS")
-        val dbUser = System.getenv("DB_USER")
+        val dbHost = System.getenv("DB_HOST")
+        val dbName = System.getenv("DB_NAME")
+        val dbUsername = System.getenv("DB_USERNAME")
         val dbPassword = System.getenv("DB_PASSWORD")
 
-        val jdbcURL = "jdbc:postgresql://$dbAddress"
+        val jdbcURL = "jdbc:postgresql://$dbHost/$dbName"
         val driverClassName = "org.postgresql.Driver"
-        val database = Database.connect(jdbcURL, driverClassName, dbUser, dbPassword)
+        val database = Database.connect(jdbcURL, driverClassName, dbUsername, dbPassword)
 
         transaction(database) {
             SchemaUtils.create(Metrics)
