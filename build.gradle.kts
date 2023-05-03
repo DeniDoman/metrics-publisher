@@ -40,9 +40,8 @@ dependencies {
 
     implementation("org.kohsuke:github-api:1.314")
 
-    implementation("org.slf4j:slf4j-api:$slf4j_version")
-    implementation("ch.qos.logback:logback-core:$logback_version")
     implementation("ch.qos.logback:logback-classic:$logback_version")
+    implementation("net.logstash.logback:logstash-logback-encoder:7.3")
     implementation("io.github.microutils:kotlin-logging-jvm:$kotlin_logging_version")
 
     testImplementation("io.ktor:ktor-server-tests-jvm:$ktor_version")
