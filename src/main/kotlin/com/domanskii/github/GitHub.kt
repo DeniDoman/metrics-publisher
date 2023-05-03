@@ -107,15 +107,15 @@ class GitHub(
         val table = tableHeader.plus(tableRows)
 
         prList.forEach { pr ->
-            log.debug { "Updating #${pr.id} PR body for ${commitSha.substring(0, 7)} commit" }
+            log.debug { "Updating #${pr.number} PR body for ${commitSha.substring(0, 7)} commit" }
             val body = pr.body
 
             if (body.isBlank()) {
-                log.info { "PR #${pr.id} doesn't have a body!" }
+                log.info { "PR #${pr.number} doesn't have a body!" }
                 return
             }
             if (!PLACEHOLDER_REGEX.containsMatchIn(body)) {
-                log.info { "PR #${pr.id} doesn't have the placeholder!" }
+                log.info { "PR #${pr.number} doesn't have the placeholder!" }
                 return
             }
 
