@@ -21,8 +21,10 @@ fun Application.configureRouting(dao: DAOFacadeImpl, gitHub: GitHub) {
                 if (req.commitSha.isBlank()) call.respond(HttpStatusCode.BadRequest, "Commit SHA should not be empty!")
                 if (req.name.isBlank()) call.respond(HttpStatusCode.BadRequest, "Name should not be empty!")
 
+                call.respond(HttpStatusCode.OK)
+
                 val isReference = gitHub.isMergeToMasterCommit(req.commitSha)
-                dao.postMetric(req.commitSha, req.name, req.value, req.units, isReference, req.isIncreaseBad)
+                dao.postMetric(req.commitSha, req.name, req.value, req.units, req.threshold, isReference, req.isIncreaseBad)
 
                 // Merge-to-master-commit doesn't have open PRs to post metrics
                 if (!isReference) {
@@ -30,8 +32,6 @@ fun Application.configureRouting(dao: DAOFacadeImpl, gitHub: GitHub) {
                         gitHub.addMetricsToPrMessage(req.commitSha)
                     }
                 }
-
-                call.respond(HttpStatusCode.OK)
             }
         }
 

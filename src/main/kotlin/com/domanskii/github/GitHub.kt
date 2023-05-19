@@ -82,8 +82,8 @@ class GitHub(
             }
 
             val symbol = when {
-                (diff != null && diff > 0 && pair.first.isIncreaseBad) -> "\uD83D\uDD3A"
-                (diff != null && diff < 0 && !pair.first.isIncreaseBad) -> "\uD83D\uDD3B"
+                (diff != null && diff > 0 && diff.absoluteValue > pair.first.threshold && pair.first.isIncreaseBad) -> "\uD83D\uDD3A" // Up arrow
+                (diff != null && diff < 0 && diff.absoluteValue > pair.first.threshold && !pair.first.isIncreaseBad) -> "\uD83D\uDD3B" // Down arrow
                 else -> ""
             }
 

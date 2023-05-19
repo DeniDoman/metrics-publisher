@@ -8,6 +8,7 @@ interface DAOFacade {
         name: String,
         value: Double,
         units: String,
+        threshold: Double,
         isReference: Boolean,
         isIncreaseBad: Boolean
     ): Metric?

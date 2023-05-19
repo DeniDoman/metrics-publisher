@@ -22,19 +22,8 @@ fun main() {
 }
 
 fun Application.module() {
-    install(Authentication) {
-        bearer {
-            realm = "Access to the '/' path"
-            authenticate { tokenCredential ->
-                if (tokenCredential.token == System.getenv("SECRET_HEADER")) {
-                    UserIdPrincipal("user")
-                } else {
-                    null
-                }
-            }
-        }
-    }
-    install(ContentNegotiation) { json() }
+    configureAuthentication()
+    configureSerialization()
     DatabaseFactory.init()
     val dao = DAOFacadeImpl()
     val github = GitHub(System.getenv("GH_TOKEN"), dao, System.getenv("GH_REPO"), System.getenv("GH_DEFAULT_BRANCH"))

@@ -8,6 +8,7 @@ data class Metric(
     val name: String,
     val value: Double,
     val units: String,
+    val threshold: Double,
     val isReference: Boolean,
     val isIncreaseBad: Boolean
 )
@@ -18,6 +19,7 @@ object Metrics : Table() {
     val name = varchar("name", 128)
     val value = double("value")
     val units = varchar("units", 16)
+    val threshold = double("threshold")
     val isReference = bool("is_reference")
     val isIncreaseBad = bool("is_increase_bad")
 

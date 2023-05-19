@@ -15,12 +15,13 @@ class DAOFacadeImpl : DAOFacade {
         name = row[Metrics.name],
         value = row[Metrics.value],
         units = row[Metrics.units],
+        threshold = row[Metrics.threshold],
         isReference = row[Metrics.isReference],
         isIncreaseBad = row[Metrics.isIncreaseBad]
     )
 
     override suspend fun postMetric(
-        commitSha: String, name: String, value: Double, units: String, isReference: Boolean, isIncreaseBad: Boolean
+        commitSha: String, name: String, value: Double, units: String, threshold: Double, isReference: Boolean, isIncreaseBad: Boolean
     ): Metric? = dbQuery {
         log.debug { "Inserting metrics into DB table..." }
         val insertStatement = Metrics.insert {
@@ -28,6 +29,7 @@ class DAOFacadeImpl : DAOFacade {
             it[Metrics.name] = name
             it[Metrics.value] = value
             it[Metrics.units] = units
+            it[Metrics.threshold] = threshold
             it[Metrics.isReference] = isReference
             it[Metrics.isIncreaseBad] = isIncreaseBad
         }
