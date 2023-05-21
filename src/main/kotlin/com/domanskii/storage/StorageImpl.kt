@@ -1,16 +1,14 @@
-package com.domanskii.dao
+package com.domanskii.storage
 
-import com.domanskii.dao.DatabaseFactory.dbQuery
-import com.domanskii.models.Metric
-import com.domanskii.models.Metrics
+import com.domanskii.common.Metric
+import com.domanskii.storage.DatabaseFactory.dbQuery
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.*
 
 private val log = KotlinLogging.logger {}
 
-class DAOFacadeImpl : DAOFacade {
+class StorageImpl : Storage {
     private fun resultRowToMetric(row: ResultRow) = Metric(
-        id = row[Metrics.id],
         commitSha = row[Metrics.commitSha],
         name = row[Metrics.name],
         value = row[Metrics.value],
@@ -20,18 +18,19 @@ class DAOFacadeImpl : DAOFacade {
         isIncreaseBad = row[Metrics.isIncreaseBad]
     )
 
-    override suspend fun postMetric(
-        commitSha: String, name: String, value: Double, units: String, threshold: Double, isReference: Boolean, isIncreaseBad: Boolean
+    override suspend fun submitMetric(
+        metric: Metric
     ): Metric? = dbQuery {
         log.debug { "Inserting metrics into DB table..." }
+
         val insertStatement = Metrics.insert {
-            it[Metrics.commitSha] = commitSha
-            it[Metrics.name] = name
-            it[Metrics.value] = value
-            it[Metrics.units] = units
-            it[Metrics.threshold] = threshold
-            it[Metrics.isReference] = isReference
-            it[Metrics.isIncreaseBad] = isIncreaseBad
+            it[commitSha] = metric.commitSha
+            it[name] = metric.name
+            it[value] = metric.value
+            it[units] = metric.units
+            it[threshold] = metric.threshold
+            it[isReference] = metric.isReference
+            it[isIncreaseBad] = metric.isIncreaseBad
         }
         insertStatement.resultedValues?.singleOrNull()?.let(::resultRowToMetric)
     }
@@ -56,6 +55,7 @@ class DAOFacadeImpl : DAOFacade {
 
     override suspend fun getReferenceForMetric(name: String): Metric? = dbQuery {
         log.debug { "Getting reference for the metric from DB..." }
+
         Metrics
             .select { (Metrics.name eq name) and (Metrics.isReference eq true) }
             .orderBy(Metrics.id to SortOrder.DESC)

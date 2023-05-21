@@ -1,4 +1,4 @@
-package com.domanskii.json
+package com.domanskii.serialization
 
 import kotlinx.serialization.Serializable
 

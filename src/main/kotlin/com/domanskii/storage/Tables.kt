@@ -1,17 +1,6 @@
-package com.domanskii.models
+package com.domanskii.storage
 
 import org.jetbrains.exposed.sql.*
-
-data class Metric(
-    val id: Int,
-    val commitSha: String,
-    val name: String,
-    val value: Double,
-    val units: String,
-    val threshold: Double,
-    val isReference: Boolean,
-    val isIncreaseBad: Boolean
-)
 
 object Metrics : Table() {
     val id = integer("id").autoIncrement()

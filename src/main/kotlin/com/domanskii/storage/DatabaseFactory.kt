@@ -1,6 +1,5 @@
-package com.domanskii.dao
+package com.domanskii.storage
 
-import com.domanskii.models.*
 import kotlinx.coroutines.*
 import mu.KotlinLogging
 import org.jetbrains.exposed.sql.*
@@ -10,13 +9,8 @@ import org.jetbrains.exposed.sql.transactions.experimental.*
 private val log = KotlinLogging.logger {}
 
 object DatabaseFactory {
-    fun init() {
+    fun init(dbHost: String, dbName: String, dbUsername: String, dbPassword: String) {
         log.debug { "Initializing Database..." }
-
-        val dbHost = System.getenv("DB_HOST")
-        val dbName = System.getenv("DB_NAME")
-        val dbUsername = System.getenv("DB_USERNAME")
-        val dbPassword = System.getenv("DB_PASSWORD")
 
         val jdbcURL = "jdbc:postgresql://$dbHost/$dbName"
         val driverClassName = "org.postgresql.Driver"
