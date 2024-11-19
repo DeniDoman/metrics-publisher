@@ -1,6 +1,6 @@
 package com.domanskii.storage
 
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.Table
 
 object Metrics : Table() {
     val id = integer("id").autoIncrement()
@@ -8,7 +8,7 @@ object Metrics : Table() {
     val name = varchar("name", 128)
     val value = double("value")
     val units = varchar("units", 16)
-    val threshold = double("threshold")
+    val threshold = double("threshold").default(0.0)
     val isReference = bool("is_reference")
     val isIncreaseBad = bool("is_increase_bad")
 
