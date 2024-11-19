@@ -35,22 +35,17 @@ class StorageImpl : Storage {
         insertStatement.resultedValues?.singleOrNull()?.let(::resultRowToMetric)
     }
 
-    override suspend fun getMetricsForCommit(commitSha: String): List<Metric> {
+    override suspend fun getMetricsForCommit(commitSha: String): List<Metric> = dbQuery {
         log.debug { "Getting metrics for the commit from DB..." }
 
-        val actualIds = dbQuery {
-            Metrics
-                .select(Metrics.name, Metrics.id.max().alias("id"))
-                .where { Metrics.commitSha eq commitSha }
-                .groupBy(Metrics.name)
-                .map {it[Metrics.id.max()].toString().toIntOrNull()}
-        }.filterNotNull()
+        val maxIdsSubQuery = Metrics
+            .select(Metrics.id.max())
+            .where { Metrics.commitSha eq commitSha }
+            .groupBy(Metrics.name)
 
-        return dbQuery {
-            Metrics
-                .selectAll().where { Metrics.id inList actualIds }
-                .map(::resultRowToMetric)
-        }
+        Metrics
+            .selectAll().where { Metrics.id inSubQuery maxIdsSubQuery }
+            .map(::resultRowToMetric)
     }
 
     override suspend fun getReferenceForMetric(name: String): Metric? = dbQuery {

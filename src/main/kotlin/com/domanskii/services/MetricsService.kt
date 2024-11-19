@@ -31,7 +31,7 @@ class MetricsService(
 
         // get all metrics for commit
         val allMetrics = storage.getMetricsForCommit(metric.commitSha)
-        log.debug { "${allMetrics.size} metrics found for ${metric.commitSha.substring(0, 7)} commit" }
+        log.debug { "${allMetrics.size} metrics found for ${metric.commitSha.take(7)} commit" }
 
         // get a reference version for each metric
         val metricsWithReferences = allMetrics.map {
@@ -39,7 +39,7 @@ class MetricsService(
         }
         log.debug {
             "${metricsWithReferences.filter { it.reference != null }.size} metric references found for ${
-                metric.commitSha.substring(0, 7)
+                metric.commitSha.take(7)
             } commit"
         }
 

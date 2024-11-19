@@ -11,42 +11,43 @@ class GitHub(
     private val repo = repo.trim()
 
     override fun isReferenceCommit(commitSha: String): Boolean {
-        log.debug { "isReferenceCommit() for ${commitSha.substring(0, 7)} commit..." }
+        log.debug { "isReferenceCommit() for ${commitSha.take(7)} commit..." }
 
-        // Check if commit belongs to merged PR to default branch
-        val prList = ghApiClient.getRepository(repo).getCommit(commitSha).listPullRequests().toList().filter {
-            it.isMerged && it.base.ref == defaultBranch
-        }
-
-        if (prList.isNotEmpty()) {
-            log.debug { "${commitSha.substring(0, 7)} is a merge-to-$defaultBranch commit!" }
-            return true
-        } else {
-            return false
+        return try {
+            val prList = ghApiClient.getRepository(repo).getCommit(commitSha).listPullRequests().filter {
+                it.isMerged() && it.base.ref == defaultBranch
+            }
+            prList.isNotEmpty().also {
+                if (it) log.debug { "${commitSha.take(7)} is a merge-to-$defaultBranch commit!" }
+            }
+        } catch (e: Exception) {
+            log.error(e) { "Error checking if commit is a reference commit." }
+            false
         }
     }
 
+
     override suspend fun publishMetrics(commitSha: String, mdText: String) {
-        log.debug { "publishMetrics() for ${commitSha.substring(0, 7)} commit..." }
+        log.debug { "publishMetrics() for ${commitSha.take(7)} commit..." }
 
         val prList = ghApiClient.getRepository(repo).getCommit(commitSha).listPullRequests().toList()
-        if (prList.size == 0) {
-            log.debug { "There are no PRs for ${commitSha.substring(0, 7)} commit..." }
+        if (prList.isEmpty()) {
+            log.debug { "There are no PRs for ${commitSha.take(7)} commit..." }
             return
         }
-        log.debug { "${prList.size} PRs found for ${commitSha.substring(0, 7)} commit" }
+        log.debug { "${prList.size} PRs found for ${commitSha.take(7)} commit" }
 
         prList.forEach { pr ->
-            log.debug { "Updating #${pr.number} PR body for ${commitSha.substring(0, 7)} commit" }
+            log.debug { "Updating #${pr.number} PR body for ${commitSha.take(7)} commit" }
             val body = pr.body
 
             if (body.isBlank()) {
                 log.info { "PR #${pr.number} doesn't have a body!" }
-                return
+                return@forEach
             }
             if (!placeholderRegex.containsMatchIn(body)) {
                 log.info { "PR #${pr.number} doesn't have the placeholder!" }
-                return
+                return@forEach
             }
 
             val result = body.replace(placeholderRegex) { matchResult ->

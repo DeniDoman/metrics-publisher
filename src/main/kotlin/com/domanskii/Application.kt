@@ -48,12 +48,12 @@ fun Application.module() {
 
 fun assertEnvVariables() {
     log.info { "Asserting env variables..." }
-    assert(System.getenv("SECRET_HEADER").isNotBlank())
-    assert(System.getenv("GH_REPO").isNotBlank())
-    assert(System.getenv("GH_TOKEN").isNotBlank())
-    assert(System.getenv("GH_DEFAULT_BRANCH").isNotBlank())
-    assert(System.getenv("DB_HOST").isNotBlank())
-    assert(System.getenv("DB_NAME").isNotBlank())
-    assert(System.getenv("DB_USERNAME").isNotBlank())
-    assert(System.getenv("DB_PASSWORD").isNotEmpty())
+    require(!System.getenv("SECRET_HEADER").isNullOrBlank()) { "SECRET_HEADER environment variable is missing or blank" }
+    require(!System.getenv("GH_REPO").isNullOrBlank()) { "GH_REPO environment variable is missing or blank" }
+    require(!System.getenv("GH_TOKEN").isNullOrBlank()) { "GH_TOKEN environment variable is missing or blank" }
+    require(!System.getenv("GH_DEFAULT_BRANCH").isNullOrBlank()) { "GH_DEFAULT_BRANCH environment variable is missing or blank" }
+    require(!System.getenv("DB_HOST").isNullOrBlank()) { "DB_HOST environment variable is missing or blank" }
+    require(!System.getenv("DB_NAME").isNullOrBlank()) { "DB_NAME environment variable is missing or blank" }
+    require(!System.getenv("DB_USERNAME").isNullOrBlank()) { "DB_USERNAME environment variable is missing or blank" }
+    require(!System.getenv("DB_PASSWORD").isNullOrBlank()) { "DB_PASSWORD environment variable is missing or blank" }
 }

@@ -9,7 +9,7 @@ interface PullRequest {
     val number: Int
     var body: String
     val base: Base
-    val isMerged: Boolean
+    fun isMerged(): Boolean
 }
 
 interface Commit {

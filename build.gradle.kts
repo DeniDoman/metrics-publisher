@@ -6,9 +6,10 @@ val logback_version: String by project
 val kotlin_logging_version: String by project
 val junit_bom_version: String by project
 val junit_jupiter_version: String by project
-val mockito_version: String by project
+val mockito_kotlin_version: String by project
 val github_version: String by project
 val logback_encoder_version: String by project
+val h2_version: String by project
 
 plugins {
     kotlin("jvm") version "1.8.21"
@@ -51,10 +52,11 @@ dependencies {
     testImplementation("io.ktor:ktor-server-tests-jvm:$ktor_version")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
 
+    testImplementation("com.h2database:h2:$h2_version") // Add this line
+
     testImplementation(platform("org.junit:junit-bom:$junit_bom_version"))
     testImplementation("org.junit.jupiter:junit-jupiter:$junit_jupiter_version")
-    testImplementation("org.mockito:mockito-core:$mockito_version")
-    testImplementation("org.mockito:mockito-junit-jupiter:$mockito_version")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockito_kotlin_version")
 }
 
 tasks.test {
