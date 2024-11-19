@@ -10,159 +10,158 @@ The application accepts metrics via a RESTful API, processes and stores them, co
 
 ### Prerequisites
 
-- **Java Development Kit (JDK) 18** or higher
-- **PostgreSQL** database
-- **GitHub Personal Access Token** with appropriate permissions (repo access)
+- **Java Development Kit (JDK)**: Ensure you have JDK 18 or higher installed.
+- **PostgreSQL Database**: Set up a PostgreSQL database to store metrics.
+- **GitHub Personal Access Token**: Obtain a GitHub token with the necessary permissions to read and write to repositories.
 
-### Installation
+### Environment Variables
 
-1. **Clone the Repository**
+Set the following environment variables required by the application:
 
-       git clone https://github.com/DeniDoman/metrics-publisher.git
-       cd metrics-publisher
+- `SECRET_HEADER`: A secret token used for authenticating API requests.
+- `GH_REPO`: The GitHub repository in the format `owner/repo` (e.g., `domanskii/metrics-publisher`).
+- `GH_TOKEN`: Your GitHub Personal Access Token.
+- `GH_DEFAULT_BRANCH`: The default branch of your repository (e.g., `main` or `master`).
+- `DB_HOST`: The hostname of your PostgreSQL database.
+- `DB_NAME`: The name of your PostgreSQL database.
+- `DB_USERNAME`: The username for your PostgreSQL database.
+- `DB_PASSWORD`: The password for your PostgreSQL database.
 
-2. **Set Up the PostgreSQL Database**
+### Running the Application
 
-    - Create a new PostgreSQL database.
-    - Note the database name, username, password, and host.
+1. **Clone the Repository**:
 
-3. **Configure Environment Variables**
+   ```bash
+   git clone https://github.com/DeniDoman/metrics-publisher.git
+   cd metrics-publisher
+   ```
 
-   Set the following environment variables required by the application:
+2. **Set Environment Variables**:
 
-    - `SECRET_HEADER`: A secret token used for API authentication.
-    - `GH_REPO`: GitHub repository in the format `owner/repo` (e.g., `yourusername/yourrepo`).
-    - `GH_TOKEN`: GitHub personal access token.
-    - `GH_DEFAULT_BRANCH`: The default branch of your repository (e.g., `main`).
-    - `DB_HOST`: Database host address (e.g., `localhost`).
-    - `DB_NAME`: Name of the PostgreSQL database.
-    - `DB_USERNAME`: Database username.
-    - `DB_PASSWORD`: Database password.
+   Export the required environment variables in your shell or set them in your IDE.
 
-   You can export these variables in your shell or include them in a `.env` file if using a tool like `dotenv`.
+   ```bash
+   export SECRET_HEADER=your_secret_header
+   export GH_REPO=owner/repo
+   export GH_TOKEN=your_github_token
+   export GH_DEFAULT_BRANCH=main
+   export DB_HOST=localhost
+   export DB_NAME=metrics_db
+   export DB_USERNAME=db_user
+   export DB_PASSWORD=db_password
+   ```
 
-4. **Build the Application**
+3. **Build the Application**:
 
-       ./gradlew build
+   ```bash
+   ./gradlew build
+   ```
 
-5. **Run the Application**
+4. **Run the Application**:
 
-       ./gradlew run
+   ```bash
+   ./gradlew run
+   ```
 
-   The server will start and listen on `http://0.0.0.0:8080`.
+   The application will start and listen on `http://0.0.0.0:8080`.
 
 ## Usage Guide
 
-### Sending Metrics
+### Submitting Metrics
 
-Metrics are sent to the application via a POST request to the `/api/v1/metrics` endpoint.
+Send a POST request to the `/api/v1/metrics` endpoint with your metric data.
 
-#### Endpoint Details
-
-- **URL**: `http://localhost:8080/api/v1/metrics`
-- **Method**: `POST`
+- **Endpoint**: `POST /api/v1/metrics`
 - **Headers**:
-    - `Authorization`: `Bearer <SECRET_HEADER>`
+    - `Authorization`: `Bearer your_secret_header`
     - `Content-Type`: `application/json`
-- **Request Body**:
+- **Body**:
 
-       {
-         "commitSha": "string",
-         "name": "string",
-         "value": number,
-         "units": "string",
-         "threshold": number,
-         "isIncreaseBad": boolean
-       }
+  ```json
+  {
+  "commitSha": "your_commit_sha",
+  "name": "metric_name",
+  "value": 10.0,
+  "units": "ms",
+  "threshold": 5.0,
+  "isIncreaseBad": true
+  }
+  ```
+  
+  - `commitSha`: (string) The SHA hash of the commit associated with the metric.
+  - `name`: (string) Name of the metric (e.g., `"build_time"`).
+  - `value`: (number) Numeric value of the metric.
+  - `units`: (string) Units of the metric (e.g., `"ms"`, `"%"`).
+  - `threshold`: (number) Threshold for significant changes that warrant attention.
+  - `isIncreaseBad`: (boolean) Indicates if an increase in the metric value is considered negative.
 
-    - `commitSha`: (string) The SHA hash of the commit associated with the metric.
-    - `name`: (string) Name of the metric (e.g., `"build_time"`).
-    - `value`: (number) Numeric value of the metric.
-    - `units`: (string) Units of the metric (e.g., `"ms"`, `"%"`).
-    - `threshold`: (number) Threshold for significant changes that warrant attention.
-    - `isIncreaseBad`: (boolean) Indicates if an increase in the metric value is considered negative.
+#### Example using `curl`:
 
-#### Example Request
+```bash
+curl -X POST http://localhost:8080/api/v1/metrics 
+-H "Authorization: Bearer your_secret_header" 
+-H "Content-Type: application/json" 
+-d '{
+"commitSha": "abc123def456",
+"name": "response_time",
+"value": 120.5,
+"units": "ms",
+"threshold": 10.0,
+"isIncreaseBad": true
+}'
+```
 
-       curl -X POST http://localhost:8080/api/v1/metrics \
-         -H "Authorization: Bearer your-secret-token" \
-         -H "Content-Type: application/json" \
-         -d '{
-           "commitSha": "abc123def456ghi789",
-           "name": "build_time",
-           "value": 120.5,
-           "units": "seconds",
-           "threshold": 5.0,
-           "isIncreaseBad": true
-         }'
+### How It Works
 
-### GitHub Pull Request Integration
-
-To integrate metrics into your GitHub Pull Requests:
-
-1. **Add a Placeholder in Your PR Template**
-
-   Include the following placeholder in your GitHub Pull Request template or in the PR description:
-
-       <!-- PR-METRICS-PUBLISHER:START -->
-
-   The application uses this placeholder to insert the generated metrics report.
-
-2. **Ensure Proper Permissions**
-
-   The GitHub token provided must have permissions to read and write to Pull Requests in the repository.
-
-### Health Check
-
-To verify that the application is running correctly, you can send a GET request to the health check endpoint:
-
-- **URL**: `http://localhost:8080/healthz`
-- **Method**: `GET`
+1. **Submit Metric**: A metric is submitted via the API.
+2. **Store Metric**: The application stores the metric in the database.
+3. **Determine Reference Commit**: The application checks if the commit is a reference commit (merged into the default branch).
+    - If it is, the metric is stored as a reference, and processing stops here (Step 4 is skipped).
+    - If not, the application retrieves the reference metric for comparison and continues processing.
+4. **Update GitHub PR**: The application updates the corresponding GitHub Pull Request by inserting the comparison Markdown table into the PR body.
 
 ## Contribution Guidelines
 
 ### Project Structure
 
-- **`main/kotlin/com/domanskii/`**: Main application source code.
-    - **`Application.kt`**: Entry point of the application.
-    - **`plugins/`**: Configuration for authentication, routing, and serialization using Ktor plugins.
-    - **`providers/`**: Implementations for version control system (VCS) providers (e.g., GitHub).
-    - **`services/`**: Core business logic, including metrics processing and markdown generation.
-    - **`storage/`**: Database interaction layer using Exposed SQL library.
-    - **`common/`**: Common data classes and utilities.
-    - **`serialization/`**: Data classes for request and response serialization.
+- `common`: Contains common data classes like `Metric` and `MetricDiff`.
+- `services`: Business logic for processing metrics and generating markdown.
+    - `MetricsService`: Handles metric processing and coordination between storage and VCS provider.
+    - `MarkdownService`: Generates markdown tables from metrics.
+- `providers`: VCS provider interface and implementations.
+    - `VcsProvider`: Interface for VCS operations.
+    - `GitHub`: Implementation of `VcsProvider` for GitHub.
+- `storage`: Database interaction layer.
+    - `Storage`: Interface defining storage operations.
+    - `StorageImpl`: Implementation of `Storage` using Exposed and PostgreSQL.
+    - `DatabaseFactory`: Initializes the database connection.
+    - `Tables`: Defines the database schema.
+- `plugins`: Ktor plugins configuration.
+    - `Authentication.kt`: Configures authentication.
+    - `Routing.kt`: Sets up HTTP routes.
+    - `Serialization.kt`: Configures content negotiation and serialization.
+- `serialization`: Data transfer objects for API requests and responses.
+- `Application.kt`: The main entry point of the application.
 
-- **`test/kotlin/com/domanskii/`**: Test suites for unit and integration testing.
+### Extending the Project
 
-### Extending the Application
+To add support for another VCS provider:
 
-#### Adding Support for a New VCS Provider
-
-1. **Implement the `VcsProvider` Interface**
-
-   Create a new class in `providers/` that implements the `VcsProvider` interface, providing methods for checking reference commits and publishing metrics.
-
-2. **Update Dependency Injection**
-
-   Modify the application initialization in `Application.kt` to use your new VCS provider.
-
-#### Enhancing Metrics Processing
-
-1. **Modify `MetricsService`**
-
-   Update or extend the `MetricsService` class to include additional processing logic or metrics analysis.
-
-2. **Update `MarkdownService`**
-
-   Customize the `MarkdownService` to alter how metrics are presented in the GitHub Pull Requests.
+1. **Implement the `VcsProvider` Interface**: Create a new class in the `providers` package that implements `VcsProvider`.
+2. **Update Dependency Injection**: Modify `Application.kt` to use your new provider based on configuration.
+3. **Add Any Necessary Configuration**: Include additional environment variables or configuration files as needed.
 
 ### Running Tests
 
-- Execute all tests:
+The project includes unit and integration tests.
 
-       ./gradlew test
+- **Run All Tests**:
 
-- Test reports can be found in the `build/reports/tests/` directory after execution.
+  ```bash
+  ./gradlew test
+  ```
+
+- Test classes are located in the `test` directory, mirroring the structure of the main source code.
 
 ## License
 

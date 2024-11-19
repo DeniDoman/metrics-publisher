@@ -1,132 +1,146 @@
 package com.domanskii.providers
 
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.kohsuke.github.*
+import org.mockito.kotlin.*
+import org.kohsuke.github.GitHub as KohsukeGitHub
 
 class GitHubTest {
+
+    private val repoName = "test/repo"
+    private val defaultBranch = "main"
+    private val gitHub: KohsukeGitHub = mock()
+    private val gitHubProvider = GitHub(repoName, defaultBranch, gitHub)
 
     @Test
     fun `isReferenceCommit should return true when commit is a merge to default branch`() {
         // Arrange
-        val defaultBranch = "main"
-        val commitSha = "1234567"
-        val pullRequest = object : PullRequest {
-            override val number: Int
-                get() = 1
-            override var body: String = "PR Body with placeholder <!-- PR-METRICS-PUBLISHER:START -->"
-            override val base: Base
-                get() = object : Base {
-                    override val ref: String
-                        get() = defaultBranch
-                }
+        val commitSha = "abc123"
+        val repo = mock<GHRepository>()
+        val commit = mock<GHCommit>()
+        val pullRequest = mock<GHPullRequest>()
+        val pullRequests = listOf(pullRequest)
+        val pullRequestBranch = mock<GHCommitPointer>()
+        val pagedIterable = mock<PagedIterable<GHPullRequest>>()
 
-            override fun isMerged(): Boolean {
-                return true
-            }
-        }
-        val ghClientApi = MockGitHubApiClient(pullRequests = listOf(pullRequest))
-        val ghClient = GitHub("repo", defaultBranch, ghClientApi)
+        whenever(gitHub.getRepository(repoName)).thenReturn(repo)
+        whenever(repo.getCommit(commitSha)).thenReturn(commit)
+        whenever(commit.listPullRequests()).thenReturn(pagedIterable)
+        whenever(pagedIterable.toList()).thenReturn(pullRequests)
+        whenever(pullRequest.isMerged).thenReturn(true)
+        whenever(pullRequest.base).thenReturn(pullRequestBranch)
+        whenever(pullRequestBranch.ref).thenReturn(defaultBranch)
+
         // Act
-        val isReferenceCommit = ghClient.isReferenceCommit(commitSha)
+        val result = gitHubProvider.isReferenceCommit(commitSha)
+
         // Assert
-        assertTrue(isReferenceCommit)
+        assertTrue(result)
     }
 
     @Test
     fun `isReferenceCommit should return false when commit is not a merge to default branch`() {
         // Arrange
-        val defaultBranch = "main"
-        val commitSha = "1234567"
-        val pullRequest = object : PullRequest {
-            override val number: Int
-                get() = 2
-            override var body: String = "PR Body without placeholder"
-            override val base: Base
-                get() = object : Base {
-                    override val ref: String
-                        get() = "feature-branch"
-                }
-            override fun isMerged(): Boolean {
-                return true
-            }
-        }
-        val ghClientApi = MockGitHubApiClient(pullRequests = listOf(pullRequest))
-        val ghClient = GitHub("repo", defaultBranch, ghClientApi)
+        val commitSha = "def456"
+        val repo = mock<GHRepository>()
+        val commit = mock<GHCommit>()
+        val pullRequest = mock<GHPullRequest>()
+        val pullRequests = listOf(pullRequest)
+        val pullRequestBranch = mock<GHCommitPointer>()
+        val pagedIterable = mock<PagedIterable<GHPullRequest>>()
+
+        whenever(gitHub.getRepository(repoName)).thenReturn(repo)
+        whenever(repo.getCommit(commitSha)).thenReturn(commit)
+        whenever(commit.listPullRequests()).thenReturn(pagedIterable)
+        whenever(pagedIterable.toList()).thenReturn(pullRequests)
+        whenever(pullRequest.isMerged).thenReturn(true)
+        whenever(pullRequest.base).thenReturn(pullRequestBranch)
+        whenever(pullRequestBranch.ref).thenReturn("feature-branch")
+
         // Act
-        val isReferenceCommit = ghClient.isReferenceCommit(commitSha)
+        val result = gitHubProvider.isReferenceCommit(commitSha)
+
         // Assert
-        assertFalse(isReferenceCommit)
+        assertFalse(result)
     }
 
     @Test
     fun `isReferenceCommit should return false when there are no PRs for the commit`() {
         // Arrange
-        val defaultBranch = "main"
-        val commitSha = "1234567"
-        val ghClientApi = MockGitHubApiClient(pullRequests = emptyList())
-        val ghClient = GitHub("repo", defaultBranch, ghClientApi)
+        val commitSha = "ghi789"
+        val repo = mock<GHRepository>()
+        val commit = mock<GHCommit>()
+        val pagedIterable = mock<PagedIterable<GHPullRequest>>()
+
+        whenever(gitHub.getRepository(repoName)).thenReturn(repo)
+        whenever(repo.getCommit(commitSha)).thenReturn(commit)
+        whenever(commit.listPullRequests()).thenReturn(pagedIterable)
+        whenever(pagedIterable.toList()).thenReturn(emptyList())
+
         // Act
-        val isReferenceCommit = ghClient.isReferenceCommit(commitSha)
+        val result = gitHubProvider.isReferenceCommit(commitSha)
+
         // Assert
-        assertFalse(isReferenceCommit)
+        assertFalse(result)
     }
 
     @Test
     fun `publishMetrics should update PR body when PR contains placeholder`() = runBlocking {
         // Arrange
-        val defaultBranch = "main"
-        val commitSha = "1234567"
-        val placeholder = "<!-- PR-METRICS-PUBLISHER:START -->"
-        val initialBody = "$placeholder\nInitial body content."
-        val mdText = "## Metrics Report\nMetric details..."
-        val pullRequest = object : PullRequest {
-            override val number: Int
-                get() = 1
-            override var body: String = initialBody
-            override val base: Base
-                get() = object : Base {
-                    override val ref: String
-                        get() = defaultBranch
-                }
-            override fun isMerged(): Boolean {
-                return true
-            }
-        }
-        val ghClientApi = MockGitHubApiClient(pullRequests = listOf(pullRequest))
-        val ghClient = GitHub("repo", defaultBranch, ghClientApi)
+        val commitSha = "jkl012"
+        val mdText = "New Metrics Text"
+        val repo = mock<GHRepository>()
+        val commit = mock<GHCommit>()
+        val pullRequest = mock<GHPullRequest>()
+        val pullRequests = listOf(pullRequest)
+        val pagedIterable = mock<PagedIterable<GHPullRequest>>()
+        val bodyWithPlaceholder = "This is the PR body.\n<!-- PR-METRICS-PUBLISHER:START -->\nOld Metrics Text"
+        val placeholderRegex = "(<!-- PR-METRICS-PUBLISHER:.*?-->.*)([\\s\\S]*)".toRegex()
+
+        whenever(gitHub.getRepository(repoName)).thenReturn(repo)
+        whenever(repo.getCommit(commitSha)).thenReturn(commit)
+        whenever(commit.listPullRequests()).thenReturn(pagedIterable)
+        whenever(pagedIterable.toList()).thenReturn(pullRequests)
+        whenever(pullRequest.body).thenReturn(bodyWithPlaceholder)
+
         // Act
-        ghClient.publishMetrics(commitSha, mdText)
+        gitHubProvider.publishMetrics(commitSha, mdText)
+
         // Assert
-        val expectedBody = "$placeholder\n$mdText"
-        assertEquals(expectedBody, pullRequest.body)
+        val expectedBody = bodyWithPlaceholder.replace(
+            placeholderRegex
+        ) { matchResult ->
+            matchResult.groupValues[1] + "\n" + mdText
+        }
+
+        verify(pullRequest).setBody(expectedBody)
     }
 
     @Test
     fun `publishMetrics should not update PR body when PR body does not contain placeholder`() = runBlocking {
         // Arrange
-        val defaultBranch = "main"
-        val commitSha = "1234567"
-        val initialBody = "Some PR body without placeholder."
-        val mdText = "## Metrics Report\nMetric details..."
-        val pullRequest = object : PullRequest {
-            override val number: Int
-                get() = 3
-            override var body: String = initialBody
-            override val base: Base
-                get() = object : Base {
-                    override val ref: String
-                        get() = defaultBranch
-                }
-            override fun isMerged(): Boolean {
-                return true
-            }
-        }
-        val ghClientApi = MockGitHubApiClient(pullRequests = listOf(pullRequest))
-        val ghClient = GitHub("repo", defaultBranch, ghClientApi)
+        val commitSha = "mno345"
+        val mdText = "New Metrics Text"
+        val repo = mock<GHRepository>()
+        val commit = mock<GHCommit>()
+        val pullRequest = mock<GHPullRequest>()
+        val pullRequests = listOf(pullRequest)
+        val pagedIterable = mock<PagedIterable<GHPullRequest>>()
+        val bodyWithoutPlaceholder = "This is the PR body without placeholder."
+
+        whenever(gitHub.getRepository(repoName)).thenReturn(repo)
+        whenever(repo.getCommit(commitSha)).thenReturn(commit)
+        whenever(commit.listPullRequests()).thenReturn(pagedIterable)
+        whenever(pagedIterable.toList()).thenReturn(pullRequests)
+        whenever(pullRequest.body).thenReturn(bodyWithoutPlaceholder)
+
         // Act
-        ghClient.publishMetrics(commitSha, mdText)
+        gitHubProvider.publishMetrics(commitSha, mdText)
+
         // Assert
-        assertEquals(initialBody, pullRequest.body)
+        verify(pullRequest, never()).setBody(any())
     }
 }

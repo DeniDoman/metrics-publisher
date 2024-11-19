@@ -4,7 +4,6 @@ import com.domanskii.plugins.configureAuthentication
 import com.domanskii.plugins.configureRouting
 import com.domanskii.plugins.configureSerialization
 import com.domanskii.providers.GitHub
-import com.domanskii.providers.GitHubApiClient
 import com.domanskii.services.MarkdownService
 import com.domanskii.services.MetricsService
 import com.domanskii.storage.DatabaseFactory
@@ -37,7 +36,7 @@ fun Application.module() {
     DatabaseFactory.init(dbHost, dbName, dbUsername, dbPassword)
     val storage = StorageImpl()
     val gitHubClient = GitHubBuilder().withOAuthToken(ghToken).build()
-    val github = GitHub(ghRepo, ghDefaultBranch, gitHubClient as GitHubApiClient)
+    val github = GitHub(ghRepo, ghDefaultBranch, gitHubClient)
     val markdownService = MarkdownService()
     val metricsService = MetricsService(storage, github, markdownService)
 
