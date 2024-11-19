@@ -1,41 +1,47 @@
 package com.domanskii.services
 
-import com.domanskii.common.Metric
+import com.domanskii.common.MetricDiff
 import mu.KotlinLogging
 import kotlin.math.absoluteValue
 
 private val log = KotlinLogging.logger {}
 
 data class OutputRow(
-    val name: String, val value: Double, val units: String, val sign: String, val diff: Double, val symbol: String
+    val name: String, val value: Double, val units: String, val sign: String, val diff: String, val symbol: String
 )
 
 class MarkdownService {
-    fun generateMetricsTable(metrics: List<Triple<Metric, Metric?, Double>>): String {
+    fun generateMetricsTable(metrics: List<MetricDiff>): String {
         log.debug { "generateMetricsTable()" }
 
-        val outputRows = metrics.map { triple ->
-            val name = triple.first.name.split("_").map { word -> word.replaceFirstChar { c -> c.uppercase() } }
+        val outputRows = metrics.map { metric ->
+            val name = metric.actual.name.split("_").map { word -> word.replaceFirstChar { c -> c.uppercase() } }
                 .joinToString(" ")
 
-            val value = triple.first.value
-            val units = triple.first.units
+            val value = metric.actual.value
+            val units = metric.actual.units
+            val diff = metric.diff
 
             val sign = when {
-                triple.third > 0 -> "+"
-                triple.third < 0 -> "-"
+                diff == null -> ""
+                diff > 0 -> "+"
+                diff < 0 -> "-"
                 else -> ""
             }
 
-            val diff = triple.third
-
-            val symbol = when {
-                (diff > 0 && diff.absoluteValue > triple.first.threshold && triple.first.isIncreaseBad) -> "\uD83D\uDD3A" // Up arrow
-                (diff < 0 && diff.absoluteValue > triple.first.threshold && !triple.first.isIncreaseBad) -> "\uD83D\uDD3B" // Down arrow
+            val indicator = when {
+                (diff == null) -> ""
+                (diff > 0 && diff.absoluteValue >= metric.actual.threshold && metric.actual.isIncreaseBad) -> "\uD83D\uDD3A" // Red Triangle Pointed Up
+                (diff < 0 && diff.absoluteValue >= metric.actual.threshold && !metric.actual.isIncreaseBad) -> "\uD83D\uDD3B" // Red Triangle Pointed Down
                 else -> ""
             }
 
-            OutputRow(name, value, units, sign, diff.absoluteValue, symbol)
+            val diffValue = when {
+                diff == null -> ""
+                else -> diff.absoluteValue.toString()
+            }
+
+            OutputRow(name, value, units, sign, diffValue, indicator)
         }.sortedBy { it.name }
 
         val headerSymbol = when {
@@ -49,8 +55,12 @@ class MarkdownService {
 """
 
         val tableRows = outputRows.map {
-            val diffString = "${it.sign} ${it.diff} ${it.units} ${it.symbol}"
-            return "| ${it.name} | ${it.value} ${it.units} | $diffString |"
+            val diffString = when {
+                it.diff.isEmpty() -> "NEW METRIC"
+                else -> "${it.sign} ${it.diff} ${it.units} ${it.symbol}"
+            }
+
+            "| ${it.name} | ${it.value} ${it.units} | $diffString |"
         }.joinToString("\n")
 
         return tableHeader.plus(tableRows)

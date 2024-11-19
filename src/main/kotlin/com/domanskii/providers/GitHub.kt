@@ -1,23 +1,20 @@
 package com.domanskii.providers
 
 import mu.KotlinLogging
-import org.kohsuke.github.GitHub
-import org.kohsuke.github.GitHubBuilder
 
 private val log = KotlinLogging.logger {}
 
 class GitHub(
-    token: String, repo: String, private val defaultBranch: String
-): Provider {
+    repo: String, private val defaultBranch: String, private val ghApiClient: GitHubApiClient
+): VcsProvider {
     private val placeholderRegex = "(<!-- PR-METRICS-PUBLISHER:.*?-->.*)([\\s\\S]*)".toRegex()
-    private val gh: GitHub = GitHubBuilder().withOAuthToken(token).build()
     private val repo = repo.trim()
 
     override fun isReferenceCommit(commitSha: String): Boolean {
         log.debug { "isReferenceCommit() for ${commitSha.substring(0, 7)} commit..." }
 
         // Check if commit belongs to merged PR to default branch
-        val prList = gh.getRepository(repo).getCommit(commitSha).listPullRequests().toList().filter {
+        val prList = ghApiClient.getRepository(repo).getCommit(commitSha).listPullRequests().toList().filter {
             it.isMerged && it.base.ref == defaultBranch
         }
 
@@ -32,7 +29,7 @@ class GitHub(
     override suspend fun publishMetrics(commitSha: String, mdText: String) {
         log.debug { "publishMetrics() for ${commitSha.substring(0, 7)} commit..." }
 
-        val prList = gh.getRepository(repo).getCommit(commitSha).listPullRequests().toList()
+        val prList = ghApiClient.getRepository(repo).getCommit(commitSha).listPullRequests().toList()
         if (prList.size == 0) {
             log.debug { "There are no PRs for ${commitSha.substring(0, 7)} commit..." }
             return

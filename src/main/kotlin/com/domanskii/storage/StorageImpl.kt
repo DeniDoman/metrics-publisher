@@ -40,15 +40,15 @@ class StorageImpl : Storage {
 
         val actualIds = dbQuery {
             Metrics
-                .slice(Metrics.name, Metrics.id.max().alias("id"))
-                .select { Metrics.commitSha eq commitSha }
+                .select(Metrics.name, Metrics.id.max().alias("id"))
+                .where { Metrics.commitSha eq commitSha }
                 .groupBy(Metrics.name)
-                .map {it[Metrics.id.max()]}
+                .map {it[Metrics.id.max()].toString().toIntOrNull()}
         }.filterNotNull()
 
         return dbQuery {
             Metrics
-                .select { Metrics.id inList actualIds }
+                .selectAll().where { Metrics.id inList actualIds }
                 .map(::resultRowToMetric)
         }
     }
@@ -57,7 +57,7 @@ class StorageImpl : Storage {
         log.debug { "Getting reference for the metric from DB..." }
 
         Metrics
-            .select { (Metrics.name eq name) and (Metrics.isReference eq true) }
+            .selectAll().where { (Metrics.name eq name) and (Metrics.isReference eq true) }
             .orderBy(Metrics.id to SortOrder.DESC)
             .limit(1)
             .map(::resultRowToMetric)

@@ -1,16 +1,19 @@
 package com.domanskii
 
-import com.domanskii.storage.StorageImpl
-import com.domanskii.storage.DatabaseFactory
+import com.domanskii.plugins.configureAuthentication
+import com.domanskii.plugins.configureRouting
+import com.domanskii.plugins.configureSerialization
 import com.domanskii.providers.GitHub
+import com.domanskii.providers.GitHubApiClient
+import com.domanskii.services.MarkdownService
+import com.domanskii.services.MetricsService
+import com.domanskii.storage.DatabaseFactory
+import com.domanskii.storage.StorageImpl
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
-import com.domanskii.plugins.*
-import com.domanskii.services.CalculatorService
-import com.domanskii.services.MarkdownService
-import com.domanskii.services.MetricsService
 import mu.KotlinLogging
+import org.kohsuke.github.GitHubBuilder
 
 private val log = KotlinLogging.logger {}
 
@@ -33,10 +36,10 @@ fun Application.module() {
 
     DatabaseFactory.init(dbHost, dbName, dbUsername, dbPassword)
     val storage = StorageImpl()
-    val github = GitHub(ghToken, ghRepo, ghDefaultBranch)
+    val gitHubClient = GitHubBuilder().withOAuthToken(ghToken).build()
+    val github = GitHub(ghRepo, ghDefaultBranch, gitHubClient as GitHubApiClient)
     val markdownService = MarkdownService()
-    val calculatorService = CalculatorService()
-    val metricsService = MetricsService(storage, github, markdownService, calculatorService)
+    val metricsService = MetricsService(storage, github, markdownService)
 
     configureAuthentication(secretHeader)
     configureSerialization()

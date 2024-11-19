@@ -1,17 +1,17 @@
 package com.domanskii.services
 
 import com.domanskii.common.Metric
+import com.domanskii.common.MetricDiff
+import com.domanskii.providers.VcsProvider
 import com.domanskii.storage.Storage
-import com.domanskii.providers.Provider
 import mu.KotlinLogging
 
 private val log = KotlinLogging.logger {}
 
 class MetricsService(
     private val storage: Storage,
-    private val provider: Provider,
+    private val vcsProvider: VcsProvider,
     private val markdownService: MarkdownService,
-    private val calculatorService: CalculatorService
 ) {
     suspend fun processMetric(
         commitSha: String,
@@ -23,7 +23,7 @@ class MetricsService(
     ) {
         log.debug { "processMetric()" }
 
-        val isReference = provider.isReferenceCommit(commitSha)
+        val isReference = vcsProvider.isReferenceCommit(commitSha)
         val metric = Metric(commitSha, name, value, units, threshold, isReference, isIncreaseBad)
         storage.submitMetric(metric)
 
@@ -33,18 +33,17 @@ class MetricsService(
         val allMetrics = storage.getMetricsForCommit(metric.commitSha)
         log.debug { "${allMetrics.size} metrics found for ${metric.commitSha.substring(0, 7)} commit" }
 
-        // get reference version for each metric
+        // get a reference version for each metric
         val metricsWithReferences = allMetrics.map {
-            Pair(it, storage.getReferenceForMetric(it.name))
+            MetricDiff(it, storage.getReferenceForMetric(it.name))
         }
         log.debug {
-            "${metricsWithReferences.filter { it.second != null }.size} metric references found for ${
+            "${metricsWithReferences.filter { it.reference != null }.size} metric references found for ${
                 metric.commitSha.substring(0, 7)
             } commit"
         }
 
-        val metricsWithDiffs = calculatorService.getMetricsDiff(metricsWithReferences)
-        val mdText = markdownService.generateMetricsTable(metricsWithDiffs)
-        provider.publishMetrics(metric.commitSha, mdText)
+        val mdText = markdownService.generateMetricsTable(metricsWithReferences)
+        vcsProvider.publishMetrics(metric.commitSha, mdText)
     }
 }
