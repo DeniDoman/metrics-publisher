@@ -10,6 +10,8 @@ val mockito_kotlin_version: String by project
 val github_version: String by project
 val logback_encoder_version: String by project
 val h2_version: String by project
+val jjwt_version: String by project
+val bouncy_castle_version: String by project
 
 plugins {
     kotlin("jvm") version "1.8.21"
@@ -44,6 +46,12 @@ dependencies {
     implementation("org.postgresql:postgresql:$postgres_version")
 
     implementation("org.kohsuke:github-api:$github_version")
+
+    // JWT and crypto for GitHub App authentication
+    implementation("io.jsonwebtoken:jjwt-api:$jjwt_version")
+    runtimeOnly("io.jsonwebtoken:jjwt-impl:$jjwt_version")
+    runtimeOnly("io.jsonwebtoken:jjwt-jackson:$jjwt_version")
+    implementation("org.bouncycastle:bcpkix-jdk18on:$bouncy_castle_version")
 
     implementation("ch.qos.logback:logback-classic:$logback_version")
     implementation("net.logstash.logback:logstash-logback-encoder:$logback_encoder_version")
