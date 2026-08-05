@@ -43,7 +43,13 @@ fun Application.module() {
         "gh_app_private_key",
         if (ghPrivateKey.startsWith("-----BEGIN")) ".pem" else ".key"
     ).apply {
-        Files.writeString(this, ghPrivateKey)
+        // Transform possibly mangled key from environment variable into the standard .pem format
+        val normalizedKey = ghPrivateKey
+            .replace("--- ", "---\n")
+            .replace(" ---", "\n---")
+            .plus("\n")
+            .replace("\n\n", "\n")
+        Files.writeString(this, normalizedKey)
     }.absolutePathString()
     
     // Create GitHub App authenticator and get authenticated client
