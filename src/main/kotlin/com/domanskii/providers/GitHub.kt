@@ -9,9 +9,11 @@ private val log = KotlinLogging.logger {}
 class GitHub(
     private val repoName: String,
     private val defaultBranch: String,
-    private val gitHub: KohsukeGitHub
+    private val makeClient: () -> KohsukeGitHub
 ) : VcsProvider {
     private val placeholderRegex = "(<!-- PR-METRICS-PUBLISHER:.*?-->.*)([\\s\\S]*)".toRegex()
+    private val gitHub: KohsukeGitHub
+        get() = makeClient()
 
     override fun isReferenceCommit(commitSha: String): Boolean {
         log.debug { "isReferenceCommit() for ${commitSha.take(7)} commit..." }

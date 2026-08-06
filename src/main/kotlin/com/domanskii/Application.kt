@@ -58,9 +58,11 @@ fun Application.module() {
         privateKeyPath = ghPrivateKeyPath,
         repo = ghRepo
     )
-    val gitHubClient = gitHubAuth.getAuthenticatedClient()
     
-    val github = GitHub(ghRepo, ghDefaultBranch, gitHubClient)
+    val github = GitHub(ghRepo, ghDefaultBranch) {
+        // This provides the client with fresh auth token at each time we need to access GH
+        gitHubAuth.getAuthenticatedClient()
+    }
     val markdownService = MarkdownService()
     val metricsService = MetricsService(storage, github, markdownService)
 
