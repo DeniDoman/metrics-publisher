@@ -35,7 +35,7 @@ class MetricsService(
      */
     suspend fun refresh(
         metric: Metric,
-        isReference: Boolean = vcsProvider.isReferenceCommit(metric.commitSha)
+        isReference: Boolean
     ) {
         if (isReference) return
 
@@ -65,5 +65,20 @@ class MetricsService(
 
         // Refresh operation gets all metrics, so the first one is enough
         storage.getMetricsForCommit(commitSha).firstOrNull()?.let { refresh(it, isReference) }
+    }
+
+    /**
+     * Refreshes metrics for every currently open PR, one commit (the PR's latest) at a time.
+     */
+    suspend fun refreshAll() {
+        log.debug { "refreshAll()" }
+
+        val commitShas = vcsProvider.getOpenPullRequestHeadCommits()
+        log.debug { "${commitShas.size} open PRs found" }
+
+        commitShas.forEach { commitSha ->
+            refresh(commitSha)
+            log.info { "Processed ${commitSha.take(7)} commit" }
+        }
     }
 }

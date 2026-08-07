@@ -81,4 +81,45 @@ class MetricsServiceTest {
         verify(markdownService).generateMetricsTable(listOf(metricDiff))
         verify(vcsProvider).publishMetrics(commitSha, mdText)
     }
+
+    @Test
+    fun `refreshAll should refresh every open PR's head commit`() = runBlocking {
+        // Arrange
+        val commitSha1 = "commitOpen111"
+        val commitSha2 = "commitOpen222"
+        val metric1 = Metric(commitSha1, "test_metric", 10.0, "ms", 5.0, isReference = false, isIncreaseBad = true)
+        val metric2 = Metric(commitSha2, "test_metric", 12.0, "ms", 5.0, isReference = false, isIncreaseBad = true)
+        val mdText = "Generated Markdown"
+
+        whenever(vcsProvider.getOpenPullRequestHeadCommits()).thenReturn(listOf(commitSha1, commitSha2))
+        whenever(vcsProvider.isReferenceCommit(commitSha1)).thenReturn(false)
+        whenever(vcsProvider.isReferenceCommit(commitSha2)).thenReturn(false)
+        whenever(storage.getMetricsForCommit(commitSha1)).thenReturn(listOf(metric1))
+        whenever(storage.getMetricsForCommit(commitSha2)).thenReturn(listOf(metric2))
+        whenever(storage.getReferenceForMetric("test_metric")).thenReturn(null)
+        whenever(markdownService.generateMetricsTable(any())).thenReturn(mdText)
+
+        // Act
+        metricsService.refreshAll()
+
+        // Assert
+        verify(vcsProvider).getOpenPullRequestHeadCommits()
+        verify(vcsProvider).publishMetrics(commitSha1, mdText)
+        verify(vcsProvider).publishMetrics(commitSha2, mdText)
+    }
+
+    @Test
+    fun `refreshAll should skip reference commits and do nothing when there are no open PRs`() = runBlocking {
+        // Arrange
+        whenever(vcsProvider.getOpenPullRequestHeadCommits()).thenReturn(emptyList())
+
+        // Act
+        metricsService.refreshAll()
+
+        // Assert
+        verify(vcsProvider).getOpenPullRequestHeadCommits()
+        verifyNoInteractions(storage)
+        verifyNoInteractions(markdownService)
+        verify(vcsProvider, never()).publishMetrics(any(), any())
+    }
 }

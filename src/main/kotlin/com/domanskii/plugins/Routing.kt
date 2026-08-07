@@ -42,6 +42,13 @@ fun Application.configureRouting(metricsService: MetricsService) {
 
                 metricsService.refresh(req.commitSha)
             }
+
+            /** Utility method to trigger metrics refresh for all open PRs **/
+            post("/api/v1/metrics/refresh/all") {
+                call.respond(HttpStatusCode.OK)
+
+                metricsService.refreshAll()
+            }
         }
 
         get("/healthz") {
