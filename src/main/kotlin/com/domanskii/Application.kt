@@ -52,16 +52,13 @@ fun Application.module() {
         Files.writeString(this, normalizedKey)
     }.absolutePathString()
     
-    // Create GitHub App authenticator and get authenticated client
-    val gitHubAuth = GitHubAppAuth(
-        appId = ghAppId,
-        privateKeyPath = ghPrivateKeyPath,
-        repo = ghRepo
-    )
-    
     val github = GitHub(ghRepo, ghDefaultBranch) {
         // This provides the client with fresh auth token at each time we need to access GH
-        gitHubAuth.getAuthenticatedClient()
+        GitHubAppAuth(
+            appId = ghAppId,
+            privateKeyPath = ghPrivateKeyPath,
+            repo = ghRepo
+        ).getAuthenticatedClient()
     }
     val markdownService = MarkdownService()
     val metricsService = MetricsService(storage, github, markdownService)
