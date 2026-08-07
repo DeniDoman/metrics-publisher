@@ -27,6 +27,16 @@ class MetricsService(
         val metric = Metric(commitSha, name, value, units, threshold, isReference, isIncreaseBad)
         storage.submitMetric(metric)
 
+        refresh(metric, isReference)
+    }
+
+    /**
+     * Posts updated metrics data into VCS tracker
+     */
+    suspend fun refresh(
+        metric: Metric,
+        isReference: Boolean = vcsProvider.isReferenceCommit(metric.commitSha)
+    ) {
         if (isReference) return
 
         // get all metrics for commit
@@ -45,5 +55,15 @@ class MetricsService(
 
         val mdText = markdownService.generateMetricsTable(metricsWithReferences)
         vcsProvider.publishMetrics(metric.commitSha, mdText)
+    }
+
+    suspend fun refresh(
+        commitSha: String
+    ) {
+        val isReference = vcsProvider.isReferenceCommit(commitSha)
+        if (isReference) return
+
+        // Refresh operation gets all metrics, so the first one is enough
+        storage.getMetricsForCommit(commitSha).firstOrNull()?.let { refresh(it, isReference) }
     }
 }

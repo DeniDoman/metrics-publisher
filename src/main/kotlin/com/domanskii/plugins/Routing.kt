@@ -1,6 +1,7 @@
 package com.domanskii.plugins
 
 import com.domanskii.serialization.PostMetricsRequest
+import com.domanskii.serialization.RefreshMetricsRequest
 import com.domanskii.services.MetricsService
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -28,6 +29,18 @@ fun Application.configureRouting(metricsService: MetricsService) {
                 metricsService.processMetric(
                     req.commitSha, req.name, req.value, req.units, req.threshold, req.isIncreaseBad
                 )
+            }
+
+            /** Utility method to trigger metrics refresh for certain commit **/
+            post("/api/v1/metrics/refresh") {
+                val req = call.receive<RefreshMetricsRequest>()
+                if (req.commitSha.isBlank()) {
+                    call.respond(HttpStatusCode.BadRequest, "Commit SHA should not be empty!")
+                    return@post
+                }
+                call.respond(HttpStatusCode.OK)
+
+                metricsService.refresh(req.commitSha)
             }
         }
 
